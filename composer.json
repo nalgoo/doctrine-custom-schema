@@ -1,0 +1,36 @@
+{
+  "name": "nalgoo/doctrine-custom-schema",
+  "type": "library",
+  "description": "Custom annotations for extending schema generation of Doctrine's SchemaTool",
+  "minimum-stability": "stable",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Vlado Senasi",
+      "email": "vladimir.senasi@nalgoo.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Nalgoo\\Doctrine\\CustomSchema\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Nalgoo\\Doctrine\\CustomSchema\\Tests\\": "tests/"
+    }
+  },
+  "require": {
+    "php": ">=8.0",
+    "doctrine/annotations": "~1",
+    "doctrine/migrations": "~3.4",
+    "doctrine/orm": "~2"
+  },
+  "require-dev": {
+    "ext-dom": "*",
+    "ext-json": "*",
+    "phpunit/phpunit": "~9.5",
+    "roave/security-advisories": "dev-latest",
+    "symfony/cache": "~6.0"
+  }
+}
