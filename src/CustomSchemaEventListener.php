@@ -3,6 +3,7 @@
 namespace Nalgoo\Doctrine\CustomSchema;
 
 use Doctrine\Common\Annotations\AnnotationReader;
+use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\Event\GenerateSchemaEventArgs;
 use Doctrine\ORM\Tools\Event\GenerateSchemaTableEventArgs;
@@ -15,6 +16,8 @@ class CustomSchemaEventListener
 	private bool $renameIdentifiers = false;
 
 	private array $ignoredForeignKeys = [];
+
+	private ?string $onUpdate = null;
 
 	public function __construct(
 		private AnnotationParser $annotationParser,
@@ -44,12 +47,21 @@ class CustomSchemaEventListener
 	 * If enabled and ConstraintNameGenerator is supplied, all non-manually set Indexes and ForeignKeys identifiers will
 	 * be renamed with ConstraintNameGenerator
 	 */
-	public function renameIdentifiers(bool $yesNo = true): void
+	public function renameIdentifiers(bool $yesNo = true): self
 	{
 		$this->renameIdentifiers = $yesNo;
 		if (!$this->constraintNameGenerator) {
 			$this->constraintNameGenerator = new ConstraintNameGenerator();
 		}
+
+		return $this;
+	}
+
+	public function setOnUpdate(string $onUpdate = 'CASCADE'): self
+	{
+		$this->onUpdate = $onUpdate;
+
+		return $this;
 	}
 
 	public function postGenerateSchemaTable(GenerateSchemaTableEventArgs $eventArgs): void
@@ -91,12 +103,20 @@ class CustomSchemaEventListener
 	 */
 	public function postGenerateSchema(GenerateSchemaEventArgs $eventArgs): void
 	{
-		if (!$this->renameIdentifiers) {
-			return;
+		if ($this->renameIdentifiers) {
+			$this->doRenameIdentifiers($eventArgs->getSchema());
 		}
 
-		$schema = $eventArgs->getSchema();
+		if ($this->onUpdate) {
+			$this->doSetOnUpdate($eventArgs->getSchema());
+		}
+	}
 
+	/**
+	 * @throws \Doctrine\DBAL\Schema\SchemaException
+	 */
+	private function doRenameIdentifiers(Schema $schema): void
+	{
 		foreach ($schema->getTables() as $table) {
 			$foreignKeys = [];
 
@@ -154,6 +174,24 @@ class CustomSchemaEventListener
 						$foreignKey->getForeignColumns(),
 					),
 				);
+			}
+		}
+	}
+
+	private function doSetOnUpdate(Schema $schema): void
+	{
+		foreach ($schema->getTables() as $table) {
+			foreach ($table->getForeignKeys() as $foreignKey) {
+				if (!$foreignKey->onUpdate()) {
+					$table->removeForeignKey($foreignKey->getName());
+					$table->addForeignKeyConstraint(
+						$foreignKey->getForeignTableName(),
+						$foreignKey->getLocalColumns(),
+						$foreignKey->getForeignColumns(),
+						[...$foreignKey->getOptions(), 'onUpdate' => $this->onUpdate],
+						$foreignKey->getName(),
+					);
+				}
 			}
 		}
 	}
