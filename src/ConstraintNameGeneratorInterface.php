@@ -9,6 +9,14 @@ interface ConstraintNameGeneratorInterface
 		string $tableName,
 		array $columnNames,
 		string $foreignTableName,
-		array $foreignColumnNames
+		array $foreignColumnNames,
+		int $maxIdentifierLength,
+	): string;
+
+	public function getIndexName(
+		string $tableName,
+		array $columnNames,
+		bool $isUnique,
+		int $maxIdentifierLength,
 	): string;
 }

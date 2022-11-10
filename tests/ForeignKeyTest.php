@@ -11,6 +11,7 @@ use Doctrine\Migrations\Provider\SchemaProvider;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\Setup;
 use Nalgoo\Doctrine\CustomSchema\SchemaTool\CustomSchemaListener;
+use Nalgoo\Doctrine\CustomSchema\Tests\Mocks\ConnectionMock;
 use PHPUnit\Framework\TestCase;
 
 final class ForeignKeyTest extends TestCase

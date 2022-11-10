@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Nalgoo\Doctrine\CustomSchema\Annotations;
 
 use Attribute;
+use Doctrine\Common\Annotations\Annotation\NamedArgumentConstructor;
 
 /**
  * Annotation class for defining custom Foreign Keys

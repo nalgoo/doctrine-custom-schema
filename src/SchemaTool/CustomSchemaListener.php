@@ -12,31 +12,28 @@ use Doctrine\ORM\Tools\ToolEvents;
 use Nalgoo\Doctrine\CustomSchema\Annotations\Annotation;
 use Nalgoo\Doctrine\CustomSchema\Annotations\CustomSchema;
 use Nalgoo\Doctrine\CustomSchema\Annotations\ForeignKey;
+use Nalgoo\Doctrine\CustomSchema\ConstraintNameGeneratorInterface;
 use Nalgoo\Doctrine\CustomSchema\SchemaTool\Exceptions\ReflectionException;
 use Nalgoo\Doctrine\CustomSchema\SchemaTool\Exceptions\SchemaToolException;
 
 class CustomSchemaListener
 {
-	private AnnotationReader $annotationReader;
-
-	private ConstraintNameGenerator $constraintNameGenerator;
-
-	public function __construct(AnnotationReader $annotationReader, ConstraintNameGenerator $constraintNameGenerator)
-	{
-		$this->annotationReader = $annotationReader;
-		$this->constraintNameGenerator = $constraintNameGenerator;
+	public function __construct(
+		private AnnotationReader $annotationReader,
+		private ?ConstraintNameGeneratorInterface $constraintNameGenerator = null
+	) {
 	}
 
 	public static function register(
 		EntityManager $em,
 		?AnnotationReader $annotationReader = null,
-		?ConstraintNameGenerator $constraintNameGenerator = null,
+		?ConstraintNameGeneratorInterface $constraintNameGenerator = null,
 	): void	{
 		$em->getEventManager()->addEventListener(
 			ToolEvents::postGenerateSchemaTable,
 			new self(
 				$annotationReader ?? new AnnotationReader(),
-				$constraintNameGenerator ?? new ConstraintNameGenerator(),
+				$constraintNameGenerator,
 			),
 		);
 	}

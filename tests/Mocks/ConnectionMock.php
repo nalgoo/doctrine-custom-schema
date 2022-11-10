@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Nalgoo\Doctrine\CustomSchema\Tests;
+namespace Nalgoo\Doctrine\CustomSchema\Tests\Mocks;
 
 use Doctrine\DBAL\Connection;
 
