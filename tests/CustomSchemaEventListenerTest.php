@@ -10,11 +10,11 @@ use Doctrine\Migrations\Provider\OrmSchemaProvider;
 use Doctrine\Migrations\Provider\SchemaProvider;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\Setup;
-use Nalgoo\Doctrine\CustomSchema\SchemaTool\CustomSchemaListener;
+use Nalgoo\Doctrine\CustomSchema\CustomSchemaEventListener;
 use Nalgoo\Doctrine\CustomSchema\Tests\Mocks\ConnectionMock;
 use PHPUnit\Framework\TestCase;
 
-final class ForeignKeyTest extends TestCase
+final class CustomSchemaEventListenerTest extends TestCase
 {
 	private ?SchemaProvider $schemaProvider = null;
 
@@ -36,7 +36,7 @@ final class ForeignKeyTest extends TestCase
 
 			$em = EntityManager::create($connection, $config);
 
-			CustomSchemaListener::register($em);
+			CustomSchemaEventListener::register($em)->renameIdentifiers();
 
 			$this->schemaProvider = new OrmSchemaProvider($em);
 		}
@@ -48,9 +48,9 @@ final class ForeignKeyTest extends TestCase
 
 		$table = $schema->getTable('comment');
 
-		$this->assertTrue($table->hasForeignKey('fk_post_reference'));
+		$this->assertTrue($table->hasForeignKey('FK_post_reference'));
 
-		$fk = $table->getForeignKey('fk_post_reference');
+		$fk = $table->getForeignKey('FK_post_reference');
 
 		$this->assertEqualsCanonicalizing(['post_id'], $fk->getLocalColumns());
 		$this->assertEquals('post', $fk->getForeignTableName());

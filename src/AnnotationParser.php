@@ -1,56 +1,35 @@
 <?php
-declare(strict_types=1);
 
-namespace Nalgoo\Doctrine\CustomSchema\SchemaTool;
+namespace Nalgoo\Doctrine\CustomSchema;
 
 use Doctrine\Common\Annotations\AnnotationReader;
-use Doctrine\DBAL\Schema\Table;
-use Doctrine\ORM\EntityManager;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\ORM\Mapping\Column;
-use Doctrine\ORM\Tools\Event\GenerateSchemaTableEventArgs;
-use Doctrine\ORM\Tools\ToolEvents;
 use Nalgoo\Doctrine\CustomSchema\Annotations\Annotation;
 use Nalgoo\Doctrine\CustomSchema\Annotations\CustomSchema;
 use Nalgoo\Doctrine\CustomSchema\Annotations\ForeignKey;
-use Nalgoo\Doctrine\CustomSchema\ConstraintNameGeneratorInterface;
-use Nalgoo\Doctrine\CustomSchema\SchemaTool\Exceptions\ReflectionException;
-use Nalgoo\Doctrine\CustomSchema\SchemaTool\Exceptions\SchemaToolException;
+use Nalgoo\Doctrine\CustomSchema\Exceptions\SchemaToolException;
 
-class CustomSchemaListener
+class AnnotationParser
 {
 	public function __construct(
 		private AnnotationReader $annotationReader,
-		private ?ConstraintNameGeneratorInterface $constraintNameGenerator = null
 	) {
+
 	}
 
-	public static function register(
-		EntityManager $em,
-		?AnnotationReader $annotationReader = null,
-		?ConstraintNameGeneratorInterface $constraintNameGenerator = null,
-	): void	{
-		$em->getEventManager()->addEventListener(
-			ToolEvents::postGenerateSchemaTable,
-			new self(
-				$annotationReader ?? new AnnotationReader(),
-				$constraintNameGenerator,
-			),
-		);
-	}
-
-	public function postGenerateSchemaTable(GenerateSchemaTableEventArgs $args): void
+	/**
+	 * @return ForeignKeyConstraint[]
+	 */
+	public function extractForeignKeys(\ReflectionClass $reflectionClass): array
 	{
-		$reflectionClass = $args->getClassMetadata()->getReflectionClass();
-
-		if (!$reflectionClass) {
-			throw new ReflectionException('Could not get Reflection class');
-		}
+		$foreignKeys = [];
 
 		$customSchemaAnnotation = $this->annotationReader->getClassAnnotation($reflectionClass, CustomSchema::class);
 
 		if ($customSchemaAnnotation) {
 			foreach ((array) $customSchemaAnnotation->value as $annotation) {
-				$this->processAnnotation($args->getClassTable(), $annotation);
+				$foreignKeys[] = $this->processAnnotation($annotation);
 			}
 		}
 
@@ -61,13 +40,14 @@ class CustomSchemaListener
 				/** @var Column|null $columnAnnotation */
 				$columnAnnotation = $this->getAnnotationByType($propertyAnnotations, Column::class);
 
-				$this->processAnnotation(
-					$args->getClassTable(),
+				$foreignKeys[] = $this->processAnnotation(
 					$annotation,
 					$columnAnnotation?->name ?? $reflectionProperty->getName(),
 				);
 			}
 		}
+
+		return array_filter($foreignKeys);
 	}
 
 	private function getAnnotationByType(array $annotations, string $type): ?object
@@ -80,17 +60,19 @@ class CustomSchemaListener
 		return null;
 	}
 
-	private function processAnnotation(Table $table, object $annotation, ?string $columnName = null): void
+	private function processAnnotation(object $annotation, ?string $columnName = null): ?ForeignKeyConstraint
 	{
 		if ($annotation instanceof ForeignKey) {
-			$this->processForeignKeyAnnotation($table, $annotation, $columnName);
+			return $this->processForeignKeyAnnotation($annotation, $columnName);
 		}
+
+		return null;
 	}
 
 	/**
 	 * @throws \Doctrine\DBAL\Schema\SchemaException
 	 */
-	private function processForeignKeyAnnotation(Table $table, ForeignKey $annotation, ?string $columnName): void
+	private function processForeignKeyAnnotation(ForeignKey $annotation, ?string $columnName): ForeignKeyConstraint
 	{
 		$columns = (array) ($annotation->column ?? $columnName);
 
@@ -109,20 +91,14 @@ class CustomSchemaListener
 			'onDelete' => str_replace('_', ' ', $annotation->onDelete),
 		];
 
-		$name = $annotation->name
-			?? $this->constraintNameGenerator->getForeignKeyName(
-				$table->getName(),
-				$columns,
-				$annotation->refTable,
-				$refColumns,
-			);
+		$name = $annotation->name ?? null;
 
-		$table->addForeignKeyConstraint(
-			$annotation->refTable,
+		return new ForeignKeyConstraint(
 			$columns,
+			$annotation->refTable,
 			$refColumns,
-			$options,
 			$name,
+			$options,
 		);
 	}
 }
