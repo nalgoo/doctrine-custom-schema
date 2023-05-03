@@ -22,7 +22,6 @@
   },
   "require": {
     "php": ">=8.0",
-    "doctrine/annotations": "~1",
     "doctrine/migrations": "~3.4",
     "doctrine/orm": "~2"
   },
@@ -31,6 +30,7 @@
     "ext-json": "*",
     "phpunit/phpunit": "~9.5",
     "roave/security-advisories": "dev-latest",
-    "symfony/cache": "~6.0"
+    "symfony/cache": "~6.0",
+    "webmozart/assert": "^1.11"
   }
 }

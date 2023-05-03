@@ -1,9 +1,10 @@
 <?php
+declare(strict_types=1);
 
 namespace Nalgoo\Doctrine\CustomSchema;
 
-use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\DBAL\Schema\Schema;
+use Doctrine\DBAL\Schema\SchemaException;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\Event\GenerateSchemaEventArgs;
 use Doctrine\ORM\Tools\Event\GenerateSchemaTableEventArgs;
@@ -20,18 +21,18 @@ class CustomSchemaEventListener
 	private ?string $onUpdate = null;
 
 	public function __construct(
-		private AnnotationParser $annotationParser,
+		private AttributeParser                   $attributeParser,
 		private ?ConstraintNameGeneratorInterface $constraintNameGenerator = null,
 	) {
 	}
 
 	public static function register(
-		EntityManager $em,
+		EntityManager                     $em,
 		?ConstraintNameGeneratorInterface $constraintNameGenerator = null,
-		?AnnotationParser $annotationParser = null,
+		?AttributeParser                  $attributeParser = null,
 	): self	{
 		$me = new self(
-			$annotationParser ?? new AnnotationParser(new AnnotationReader()),
+			$attributeParser ?? new AttributeParser(),
 			$constraintNameGenerator,
 		);
 
@@ -64,6 +65,9 @@ class CustomSchemaEventListener
 		return $this;
 	}
 
+	/**
+	 * @throws SchemaException
+	 */
 	public function postGenerateSchemaTable(GenerateSchemaTableEventArgs $eventArgs): void
 	{
 		$reflectionClass = $eventArgs->getClassMetadata()->getReflectionClass();
@@ -74,7 +78,7 @@ class CustomSchemaEventListener
 
 		$table = $eventArgs->getClassTable();
 
-		$foreignKeys = $this->annotationParser->extractForeignKeys($reflectionClass);
+		$foreignKeys = $this->attributeParser->extractForeignKeys($reflectionClass);
 
 		foreach ($foreignKeys as $foreignKey) {
 			if ($foreignKey->getName()) {
@@ -178,6 +182,9 @@ class CustomSchemaEventListener
 		}
 	}
 
+	/**
+	 * @throws SchemaException
+	 */
 	private function doSetOnUpdate(Schema $schema): void
 	{
 		foreach ($schema->getTables() as $table) {

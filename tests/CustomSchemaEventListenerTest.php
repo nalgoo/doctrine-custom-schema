@@ -3,13 +3,12 @@ declare(strict_types=1);
 
 namespace Nalgoo\Doctrine\CustomSchema\Tests;
 
-use Doctrine\Common\Annotations\AnnotationRegistry;
 use Doctrine\DBAL\DriverManager;
-use Doctrine\DBAL\Platforms\MariaDb1027Platform;
+use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\Migrations\Provider\OrmSchemaProvider;
 use Doctrine\Migrations\Provider\SchemaProvider;
 use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\Tools\Setup;
+use Doctrine\ORM\ORMSetup;
 use Nalgoo\Doctrine\CustomSchema\CustomSchemaEventListener;
 use Nalgoo\Doctrine\CustomSchema\Tests\Mocks\ConnectionMock;
 use PHPUnit\Framework\TestCase;
@@ -20,15 +19,13 @@ final class CustomSchemaEventListenerTest extends TestCase
 
 	public function setUp(): void
 	{
-		AnnotationRegistry::registerUniqueLoader('class_exists');
-
 		if (!$this->schemaProvider) {
-			$config = Setup::createAnnotationMetadataConfiguration([__DIR__], true, null, null, false);
+			$config = ORMSetup::createAttributeMetadataConfiguration([__DIR__], true);
 
 			$connection = DriverManager::getConnection(
 				[
 					'url' => 'mysql://user:pass@localhost/db',
-					'platform' => new MariaDb1027Platform(),
+					'platform' => new MariaDBPlatform(),
 					'wrapperClass' => ConnectionMock::class,
 				],
 				$config,
